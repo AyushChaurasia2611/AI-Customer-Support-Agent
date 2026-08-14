@@ -1,0 +1,86 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Customer {
+  id         String   @id @default(uuid())
+  customerId String   @unique
+  name       String
+  email      String
+  phone      String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  orders        Order[]
+  refunds       Refund[]
+  agentSessions AgentSession[]
+}
+
+model Order {
+  id              String    @id @default(uuid())
+  orderId         String    @unique
+  customerId      String
+  productName     String
+  productCategory String
+  amount          Float
+  currency        String    @default("USD")
+  purchaseDate    DateTime
+  deliveryDate    DateTime?
+  status          String
+  condition       String
+  finalSale       Boolean   @default(false)
+  clearance       Boolean   @default(false)
+  fraudFlag       Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  customer      Customer       @relation(fields: [customerId], references: [customerId], onDelete: Cascade)
+  refunds       Refund[]
+  agentSessions AgentSession[]
+}
+
+model Refund {
+  id          String    @id @default(uuid())
+  refundId    String    @unique
+  orderId     String
+  customerId  String
+  amount      Float
+  status      String
+  reason      String
+  createdAt   DateTime  @default(now())
+  processedAt DateTime?
+
+  customer Customer @relation(fields: [customerId], references: [customerId], onDelete: Cascade)
+  order    Order    @relation(fields: [orderId], references: [orderId], onDelete: Cascade)
+}
+
+model AgentSession {
+  id          String    @id @default(uuid())
+  customerId  String?
+  orderId     String?
+  status      String    @default("ACTIVE")
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  customer Customer?   @relation(fields: [customerId], references: [customerId], onDelete: SetNull)
+  order    Order?      @relation(fields: [orderId], references: [orderId], onDelete: SetNull)
+  events   AgentEvent[]
+}
+
+model AgentEvent {
+  id        String   @id @default(uuid())
+  sessionId String
+  type      String
+  toolName  String?
+  status    String?
+  message   String
+  metadata  String?
+  createdAt DateTime @default(now())
+
+  session AgentSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
